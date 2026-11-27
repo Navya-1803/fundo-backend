@@ -134,4 +134,56 @@ class NoteServiceImplTest {
         when(noteRepository.findByIdAndUserId(5L, 1L)).thenReturn(Optional.of(note(5L)));
         assertEquals("Title 5", noteService.getNoteById(5L, TOKEN).getTitle());
     }
+
+    @Test
+    void testUpdateNote() {
+        Note note = note(5L);
+        when(noteRepository.findByIdAndUserId(5L, 1L)).thenReturn(Optional.of(note));
+        NoteResponseDto response = noteService.updateNote(5L, new NoteRequestDto(" New title ", "New body"), TOKEN);
+        assertEquals("New title", response.getTitle());
+        assertEquals("New body", response.getDescription());
+    }
+
+    @Test
+    void testUpdateNote_TrashedNoteRejected() {
+        Note note = note(5L);
+        note.setTrashed(true);
+        when(noteRepository.findByIdAndUserId(5L, 1L)).thenReturn(Optional.of(note));
+        assertThrows(IllegalArgumentException.class, () -> noteService.updateNote(5L, new NoteRequestDto("T", ""), TOKEN));
+    }
+
+    @Test
+    void testDeleteNote_OnlyFromTrash() {
+        Note active = note(5L);
+        when(noteRepository.findByIdAndUserId(5L, 1L)).thenReturn(Optional.of(active));
+        assertThrows(IllegalArgumentException.class, () -> noteService.deleteNote(5L, TOKEN));
+        verify(noteRepository, never()).delete(any(Note.class));
+
+        active.setTrashed(true);
+        noteService.deleteNote(5L, TOKEN);
+        verify(noteRepository).delete(active);
+    }
+
+    @Test
+    void testArchivedAndTrashedLists() {
+        when(noteRepository.findByUserIdAndArchivedTrueAndTrashedFalse(1L)).thenReturn(List.of(note(1L)));
+        when(noteRepository.findByUserIdAndTrashedTrue(1L)).thenReturn(List.of(note(2L), note(3L)));
+        assertEquals(1, noteService.getArchivedNotes(TOKEN).size());
+        assertEquals(2, noteService.getTrashedNotes(TOKEN).size());
+    }
+
+    @Test
+    void testSearchNotes_MatchesTitleAndDescriptionButNotTrash() {
+        Note shopping = note(1L);
+        shopping.setTitle("Shopping list");
+        Note body = note(2L);
+        body.setDescription("buy SHOES");
+        Note trashed = note(3L);
+        trashed.setTitle("shopping old");
+        trashed.setTrashed(true);
+        when(noteRepository.findByUserId(1L)).thenReturn(List.of(shopping, body, trashed));
+        assertEquals(1, noteService.searchNotes("shopping", TOKEN).size());
+        assertEquals(1, noteService.searchNotes("shoes", TOKEN).size());
+        assertEquals(2, noteService.searchNotes(" ", TOKEN).size());
+    }
 }
