@@ -20,6 +20,7 @@ public class NoteResponseDto implements Serializable {
     private boolean pinned;
     private boolean archived;
     private boolean trashed;
+    private LocalDateTime reminderTime;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -84,6 +85,14 @@ public class NoteResponseDto implements Serializable {
 
     public void setTrashed(boolean trashed) {
         this.trashed = trashed;
+    }
+
+    public LocalDateTime getReminderTime() {
+        return reminderTime;
+    }
+
+    public void setReminderTime(LocalDateTime reminderTime) {
+        this.reminderTime = reminderTime;
     }
 
     public LocalDateTime getCreatedAt() {

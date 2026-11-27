@@ -49,4 +49,12 @@ class NoteTest {
     void testToString() {
         assertTrue(new Note("Ideas", "", null).toString().contains("title='Ideas'"));
     }
+
+    @Test
+    void testReminderTime() {
+        Note note = new Note();
+        assertNull(note.getReminderTime());
+        note.setReminderTime(java.time.LocalDateTime.of(2030, 1, 1, 9, 0));
+        assertEquals(2030, note.getReminderTime().getYear());
+    }
 }
