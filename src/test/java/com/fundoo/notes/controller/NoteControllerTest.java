@@ -3,6 +3,7 @@ package com.fundoo.notes.controller;
 import com.fundoo.notes.dto.response.NoteResponseDto;
 import com.fundoo.notes.exception.InvalidCredentialsException;
 import com.fundoo.notes.exception.NoteNotFoundException;
+import com.fundoo.notes.service.LabelService;
 import com.fundoo.notes.service.NoteService;
 
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,9 @@ class NoteControllerTest {
 
     @MockitoBean
     private NoteService noteService;
+
+    @MockitoBean
+    private LabelService labelService;
 
     private NoteResponseDto note(boolean pinned, boolean archived, boolean trashed) {
         return new NoteResponseDto(1L, "Shopping", "Milk", pinned, archived, trashed, null, null);
@@ -128,5 +132,18 @@ class NoteControllerTest {
         mockMvc.perform(get("/api/notes/archived").header("Authorization", TOKEN)).andExpect(jsonPath("$[0].archived").value(true));
         mockMvc.perform(get("/api/notes/trash").header("Authorization", TOKEN)).andExpect(jsonPath("$[0].trashed").value(true));
         mockMvc.perform(get("/api/notes/search").param("keyword", "shop").header("Authorization", TOKEN)).andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void testAddAndRemoveLabel() throws Exception {
+        NoteResponseDto labelled = note(false, false, false);
+        labelled.setLabels(java.util.List.of(new com.fundoo.notes.dto.response.LabelResponseDto(4L, "Work")));
+        when(labelService.addLabelToNote(1L, 4L, TOKEN)).thenReturn(labelled);
+        when(labelService.removeLabelFromNote(1L, 4L, TOKEN)).thenReturn(note(false, false, false));
+        mockMvc.perform(post("/api/notes/1/labels/4").header("Authorization", TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.labels[0].name").value("Work"));
+        mockMvc.perform(delete("/api/notes/1/labels/4").header("Authorization", TOKEN))
+                .andExpect(jsonPath("$.labels.length()").value(0));
     }
 }
