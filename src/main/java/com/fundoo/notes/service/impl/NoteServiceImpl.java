@@ -85,6 +85,70 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     @CacheEvict(value = NOTES_CACHE, key = USER_KEY)
+    public NoteResponseDto updateNote(Long noteId, NoteRequestDto requestDto, String token) {
+        Note note = findOwnedNote(noteId, token);
+        if (note.isTrashed()) {
+            log.warn("Update rejected, note id: {} is in trash", noteId);
+            throw new IllegalArgumentException("A note in trash cannot be edited, restore it first");
+        }
+        note.setTitle(requestDto.getTitle().trim());
+        note.setDescription(requestDto.getDescription());
+        log.info("Note id: {} updated", noteId);
+        return mapToResponse(noteRepository.save(note));
+    }
+
+    @Override
+    @CacheEvict(value = NOTES_CACHE, key = USER_KEY)
+    public void deleteNote(Long noteId, String token) {
+        Note note = findOwnedNote(noteId, token);
+        // only notes that are already in trash can be deleted forever
+        if (!note.isTrashed()) {
+            log.warn("Delete rejected, note id: {} is not in trash", noteId);
+            throw new IllegalArgumentException("Move the note to trash before deleting it forever");
+        }
+        noteRepository.delete(note);
+        log.info("Note id: {} deleted permanently", noteId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<NoteResponseDto> getArchivedNotes(String token) {
+        Long userId = findUserFromToken(token).getId();
+        log.info("Fetching archived notes for user id: {}", userId);
+        return noteRepository.findByUserIdAndArchivedTrueAndTrashedFalse(userId).stream()
+                .sorted(Comparator.comparing(Note::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<NoteResponseDto> getTrashedNotes(String token) {
+        Long userId = findUserFromToken(token).getId();
+        log.info("Fetching trashed notes for user id: {}", userId);
+        return noteRepository.findByUserIdAndTrashedTrue(userId).stream()
+                .sorted(Comparator.comparing(Note::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<NoteResponseDto> searchNotes(String keyword, String token) {
+        Long userId = findUserFromToken(token).getId();
+        String text = keyword == null ? "" : keyword.trim().toLowerCase();
+        log.info("Searching notes of user id: {} for '{}'", userId, text);
+        // trashed notes are not part of search results
+        return noteRepository.findByUserId(userId).stream()
+                .filter(note -> !note.isTrashed())
+                .filter(note -> note.getTitle().toLowerCase().contains(text)
+                        || (note.getDescription() != null && note.getDescription().toLowerCase().contains(text)))
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @CacheEvict(value = NOTES_CACHE, key = USER_KEY)
     public NoteResponseDto pinNote(Long noteId, String token) {
         Note note = findOwnedNote(noteId, token);
         if (note.isTrashed()) {

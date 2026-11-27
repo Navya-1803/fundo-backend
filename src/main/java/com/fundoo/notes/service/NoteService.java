@@ -19,6 +19,16 @@ public interface NoteService {
 
     NoteResponseDto getNoteById(Long noteId, String token);
 
+    NoteResponseDto updateNote(Long noteId, NoteRequestDto requestDto, String token);
+
+    void deleteNote(Long noteId, String token);
+
+    List<NoteResponseDto> getArchivedNotes(String token);
+
+    List<NoteResponseDto> getTrashedNotes(String token);
+
+    List<NoteResponseDto> searchNotes(String keyword, String token);
+
     NoteResponseDto pinNote(Long noteId, String token);
 
     NoteResponseDto archiveNote(Long noteId, String token);
