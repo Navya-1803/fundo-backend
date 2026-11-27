@@ -52,27 +52,27 @@ Every feature was built on its own branch from `develop` and merged back in this
 
 | Branch | Feature |
 |---|---|
-| `feature/UserEntityRepository` | User entity and repository |
-| `feature/DTO` | Request / response DTOs with validation |
-| `feature/ServiceController` | Register and login endpoints |
-| `feature/TokenGenAndEncoding` | JWT tokens and BCrypt passwords |
-| `feature/ExceptionHandling` | Custom exceptions and global error handler |
-| `feature/NoteEntityAndRepository` | Note entity and repository |
-| `feature/Note` | Create, list, pin, archive and trash notes |
-| `feature/LoggingStatement` | Logging across the application |
-| `feature/JMSIntegration` | Registration events through ActiveMQ |
-| `feature/RabbitMQ` | Reminder events through RabbitMQ |
-| `feature/RedisImplementation` | Redis key-value API and OTP service |
-| `feature/Cache` | Redis cache for the notes dashboard |
-| `feature/BatchProcessing` | Batch job deleting old trashed notes |
-| `feature/ExcelIntegration` | Import notes from Excel |
-| `feature/AOP` | Logging and performance aspects |
-| `feature/CorsConfiguration` | CORS for the React frontend |
-| `feature/NoteUpdateAndDelete` | Edit, delete forever, archive / trash lists, search |
-| `feature/ReminderPersistence` | Reminders stored on notes, list and remove |
-| `feature/Label` | Labels and labelling notes |
-| `feature/ForgotResetPassword` | Forgot / reset password with OTP |
-| `feature/DockerSetup` | Docker Compose and cache fallback |
+| `feature/UC1-UserEntityRepository` | User entity and repository |
+| `feature/UC2-DTO` | Request / response DTOs with validation |
+| `feature/UC3-ServiceController` | Register and login endpoints |
+| `feature/UC4-TokenGenAndEncoding` | JWT tokens and BCrypt passwords |
+| `feature/UC5-ExceptionHandling` | Custom exceptions and global error handler |
+| `feature/UC6-NoteEntityAndRepository` | Note entity and repository |
+| `feature/UC7-Note` | Create, list, pin, archive and trash notes |
+| `feature/UC8-LoggingStatement` | Logging across the application |
+| `feature/UC9-JMSIntegration` | Registration events through ActiveMQ |
+| `feature/UC10-RabbitMQ` | Reminder events through RabbitMQ |
+| `feature/UC11-RedisImplementation` | Redis key-value API and OTP service |
+| `feature/UC12-Cache` | Redis cache for the notes dashboard |
+| `feature/UC13-BatchProcessing` | Batch job deleting old trashed notes |
+| `feature/UC14-ExcelIntegration` | Import notes from Excel |
+| `feature/UC15-AOP` | Logging and performance aspects |
+| `feature/UC16-CorsConfiguration` | CORS for the React frontend |
+| `feature/UC17-NoteUpdateAndDelete` | Edit, delete forever, archive / trash lists, search |
+| `feature/UC18-ReminderPersistence` | Reminders stored on notes, list and remove |
+| `feature/UC19-Label` | Labels and labelling notes |
+| `feature/UC20-ForgotResetPassword` | Forgot / reset password with OTP |
+| `feature/UC21-DockerSetup` | Docker Compose and cache fallback |
 
 ## How to Run
 
