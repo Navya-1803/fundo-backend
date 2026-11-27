@@ -36,6 +36,9 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
 
     List<Note> findByLabelsId(Long labelId);
 
+    // reminders that are due and whose email was not sent yet
+    List<Note> findByReminderTimeLessThanEqualAndReminderSentFalseAndTrashedFalse(LocalDateTime time);
+
     // notes with a reminder, ordered by the reminder time
     List<Note> findByUserIdAndReminderTimeIsNotNullAndTrashedFalseOrderByReminderTimeAsc(Long userId);
 

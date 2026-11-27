@@ -87,4 +87,19 @@ class NoteRepositoryTest {
         assertEquals(2, reminders.size());
         assertEquals(second.getId(), reminders.get(0).getId());
     }
+
+    @Test
+    void testFindDueReminders() {
+        java.util.List<Note> notes = noteRepository.findByUserId(navya.getId());
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        notes.get(0).setReminderTime(now.minusMinutes(1));
+        notes.get(1).setReminderTime(now.plusDays(1));
+        notes.get(2).setReminderTime(now.minusMinutes(5));
+        noteRepository.saveAll(notes);
+        // the third note is in trash, the second is not due yet
+        assertEquals(1, noteRepository.findByReminderTimeLessThanEqualAndReminderSentFalseAndTrashedFalse(now).size());
+        notes.get(0).setReminderSent(true);
+        noteRepository.save(notes.get(0));
+        assertTrue(noteRepository.findByReminderTimeLessThanEqualAndReminderSentFalseAndTrashedFalse(now).isEmpty());
+    }
 }

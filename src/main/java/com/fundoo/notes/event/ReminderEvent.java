@@ -5,7 +5,8 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * Message published to RabbitMQ when a reminder is created on a note.
+ * Message published to RabbitMQ when the reminder of a note is due. The
+ * consumer turns it into an email to the note's owner.
  *
  * @author Navya Raj
  */
@@ -19,6 +20,10 @@ public class ReminderEvent implements Serializable {
     private String noteTitle;
     private LocalDateTime reminderTime;
     private String message;
+    // owner details used for the reminder email
+    private String userEmail;
+    private String userFirstName;
+    private String noteDescription;
 
     public ReminderEvent() {
     }
@@ -69,6 +74,30 @@ public class ReminderEvent implements Serializable {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
+
+    public String getUserFirstName() {
+        return userFirstName;
+    }
+
+    public void setUserFirstName(String userFirstName) {
+        this.userFirstName = userFirstName;
+    }
+
+    public String getNoteDescription() {
+        return noteDescription;
+    }
+
+    public void setNoteDescription(String noteDescription) {
+        this.noteDescription = noteDescription;
     }
 
     @Override

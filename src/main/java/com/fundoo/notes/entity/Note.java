@@ -48,6 +48,14 @@ public class Note {
     @Column(name = "reminder_time")
     private LocalDateTime reminderTime;
 
+    // optional text added to the reminder email
+    @Column(name = "reminder_message")
+    private String reminderMessage;
+
+    // true once the reminder email was sent, so it is sent only once
+    @Column(name = "reminder_sent", nullable = false, columnDefinition = "boolean default false")
+    private boolean reminderSent;
+
     // owner of the note, loaded only when it is needed
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -140,6 +148,22 @@ public class Note {
 
     public void setReminderTime(LocalDateTime reminderTime) {
         this.reminderTime = reminderTime;
+    }
+
+    public String getReminderMessage() {
+        return reminderMessage;
+    }
+
+    public void setReminderMessage(String reminderMessage) {
+        this.reminderMessage = reminderMessage;
+    }
+
+    public boolean isReminderSent() {
+        return reminderSent;
+    }
+
+    public void setReminderSent(boolean reminderSent) {
+        this.reminderSent = reminderSent;
     }
 
     public User getUser() {

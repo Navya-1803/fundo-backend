@@ -1,5 +1,7 @@
 package com.fundoo.notes.service;
 
+import com.fundoo.notes.event.ReminderEvent;
+
 /**
  * Sends emails to users.
  *
@@ -13,4 +15,11 @@ public interface EmailService {
      * @throws com.fundoo.notes.exception.EmailDeliveryException if the mail server rejects or cannot be reached
      */
     void sendOtpEmail(String to, String firstName, String otp, long validMinutes);
+
+    /**
+     * Sends the reminder of a note to its owner.
+     *
+     * @throws com.fundoo.notes.exception.EmailDeliveryException if the mail server rejects or cannot be reached
+     */
+    void sendReminderEmail(ReminderEvent event);
 }

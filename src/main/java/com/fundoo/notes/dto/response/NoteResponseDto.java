@@ -23,6 +23,7 @@ public class NoteResponseDto implements Serializable {
     private boolean archived;
     private boolean trashed;
     private LocalDateTime reminderTime;
+    private boolean reminderSent;
     private List<LabelResponseDto> labels = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -96,6 +97,14 @@ public class NoteResponseDto implements Serializable {
 
     public void setReminderTime(LocalDateTime reminderTime) {
         this.reminderTime = reminderTime;
+    }
+
+    public boolean isReminderSent() {
+        return reminderSent;
+    }
+
+    public void setReminderSent(boolean reminderSent) {
+        this.reminderSent = reminderSent;
     }
 
     public List<LabelResponseDto> getLabels() {

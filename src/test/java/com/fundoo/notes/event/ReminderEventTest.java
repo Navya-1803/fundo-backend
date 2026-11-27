@@ -33,4 +33,15 @@ class ReminderEventTest {
         assertEquals("T", event.getNoteTitle());
         assertEquals("M", event.getMessage());
     }
+
+    @Test
+    void testOwnerDetails() {
+        ReminderEvent event = new ReminderEvent();
+        event.setUserEmail("navya@example.com");
+        event.setUserFirstName("Navya");
+        event.setNoteDescription("Body");
+        assertEquals("navya@example.com", event.getUserEmail());
+        assertEquals("Navya", event.getUserFirstName());
+        assertEquals("Body", event.getNoteDescription());
+    }
 }
