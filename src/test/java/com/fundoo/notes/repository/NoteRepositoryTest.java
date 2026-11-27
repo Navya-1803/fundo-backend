@@ -72,4 +72,19 @@ class NoteRepositoryTest {
         assertEquals(1, noteRepository.findByTrashedTrueAndUpdatedAtBefore(java.time.LocalDateTime.now().plusMinutes(1)).size());
         assertTrue(noteRepository.findByTrashedTrueAndUpdatedAtBefore(java.time.LocalDateTime.now().minusDays(1)).isEmpty());
     }
+
+    @Test
+    void testFindNotesWithReminders_SortedAndWithoutTrash() {
+        java.util.List<Note> notes = noteRepository.findByUserId(navya.getId());
+        Note first = notes.get(0);
+        first.setReminderTime(java.time.LocalDateTime.of(2030, 5, 1, 9, 0));
+        Note second = notes.get(1);
+        second.setReminderTime(java.time.LocalDateTime.of(2030, 1, 1, 9, 0));
+        Note trashed = notes.get(2);
+        trashed.setReminderTime(java.time.LocalDateTime.of(2030, 2, 1, 9, 0));
+        noteRepository.saveAll(notes);
+        java.util.List<Note> reminders = noteRepository.findByUserIdAndReminderTimeIsNotNullAndTrashedFalseOrderByReminderTimeAsc(navya.getId());
+        assertEquals(2, reminders.size());
+        assertEquals(second.getId(), reminders.get(0).getId());
+    }
 }

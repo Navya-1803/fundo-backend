@@ -44,4 +44,12 @@ class NoteResponseDtoTest {
     void testIsSerializable() {
         assertInstanceOf(Serializable.class, new NoteResponseDto());
     }
+
+    @Test
+    void testReminderTime() {
+        NoteResponseDto dto = new NoteResponseDto();
+        LocalDateTime time = LocalDateTime.of(2030, 1, 1, 9, 0);
+        dto.setReminderTime(time);
+        assertEquals(time, dto.getReminderTime());
+    }
 }
