@@ -1,8 +1,11 @@
 package com.fundoo.notes.controller;
 
+import com.fundoo.notes.dto.request.ForgotPasswordRequestDto;
 import com.fundoo.notes.dto.request.LoginRequestDto;
+import com.fundoo.notes.dto.request.ResetPasswordRequestDto;
 import com.fundoo.notes.dto.request.UserRegisterRequestDto;
 import com.fundoo.notes.dto.response.LoginResponseDto;
+import com.fundoo.notes.dto.response.PasswordResetResponseDto;
 import com.fundoo.notes.dto.response.UserResponseDto;
 import com.fundoo.notes.service.UserService;
 
@@ -44,5 +47,17 @@ public class UserController {
     public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto requestDto) {
         log.debug("POST /api/users/login");
         return ResponseEntity.ok(userService.login(requestDto));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<PasswordResetResponseDto> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDto requestDto) {
+        log.debug("POST /api/users/forgot-password");
+        return ResponseEntity.ok(userService.forgotPassword(requestDto));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<PasswordResetResponseDto> resetPassword(@Valid @RequestBody ResetPasswordRequestDto requestDto) {
+        log.debug("POST /api/users/reset-password");
+        return ResponseEntity.ok(userService.resetPassword(requestDto));
     }
 }

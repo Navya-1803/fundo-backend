@@ -91,5 +91,4 @@ public class ReminderServiceImpl implements ReminderService {
     private Note findOwnedNote(Long noteId, Long userId) {
         return noteRepository.findByIdAndUserId(noteId, userId).orElseThrow(() -> new NoteNotFoundException(noteId));
     }
-
 }
