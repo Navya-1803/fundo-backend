@@ -17,9 +17,11 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(NoteController.class)
@@ -93,5 +95,38 @@ class NoteControllerTest {
         mockMvc.perform(patch("/api/notes/99/pin").header("Authorization", TOKEN))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Note not found with id: 99"));
+    }
+
+    @Test
+    void testUpdateNote() throws Exception {
+        when(noteService.updateNote(eq(1L), any(), eq(TOKEN))).thenReturn(new NoteResponseDto(1L, "Edited", "Body", false, false, false, null, null));
+        mockMvc.perform(put("/api/notes/1").header("Authorization", TOKEN).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\": \"Edited\", \"description\": \"Body\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Edited"));
+    }
+
+    @Test
+    void testDeleteNote_Returns204() throws Exception {
+        mockMvc.perform(delete("/api/notes/1").header("Authorization", TOKEN)).andExpect(status().isNoContent());
+        verify(noteService).deleteNote(1L, TOKEN);
+    }
+
+    @Test
+    void testDeleteNote_NotInTrash_Returns400() throws Exception {
+        doThrow(new IllegalArgumentException("Move the note to trash before deleting it forever")).when(noteService).deleteNote(1L, TOKEN);
+        mockMvc.perform(delete("/api/notes/1").header("Authorization", TOKEN))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Move the note to trash before deleting it forever"));
+    }
+
+    @Test
+    void testArchivedTrashAndSearchLists() throws Exception {
+        when(noteService.getArchivedNotes(TOKEN)).thenReturn(List.of(note(false, true, false)));
+        when(noteService.getTrashedNotes(TOKEN)).thenReturn(List.of(note(false, false, true)));
+        when(noteService.searchNotes("shop", TOKEN)).thenReturn(List.of(note(false, false, false)));
+        mockMvc.perform(get("/api/notes/archived").header("Authorization", TOKEN)).andExpect(jsonPath("$[0].archived").value(true));
+        mockMvc.perform(get("/api/notes/trash").header("Authorization", TOKEN)).andExpect(jsonPath("$[0].trashed").value(true));
+        mockMvc.perform(get("/api/notes/search").param("keyword", "shop").header("Authorization", TOKEN)).andExpect(jsonPath("$.length()").value(1));
     }
 }
