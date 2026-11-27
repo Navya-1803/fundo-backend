@@ -31,6 +31,9 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
 
     Optional<Note> findByIdAndUserId(Long id, Long userId);
 
+    // notes with a reminder, ordered by the reminder time
+    List<Note> findByUserIdAndReminderTimeIsNotNullAndTrashedFalseOrderByReminderTimeAsc(Long userId);
+
     // trashed notes not touched since the given time, used by the cleanup batch job
     List<Note> findByTrashedTrueAndUpdatedAtBefore(LocalDateTime cutoff);
 }

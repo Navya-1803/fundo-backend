@@ -40,6 +40,10 @@ public class Note {
 
     private boolean trashed;
 
+    // time of the reminder set on this note, null when there is none
+    @Column(name = "reminder_time")
+    private LocalDateTime reminderTime;
+
     // owner of the note, loaded only when it is needed
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -117,6 +121,14 @@ public class Note {
 
     public void setTrashed(boolean trashed) {
         this.trashed = trashed;
+    }
+
+    public LocalDateTime getReminderTime() {
+        return reminderTime;
+    }
+
+    public void setReminderTime(LocalDateTime reminderTime) {
+        this.reminderTime = reminderTime;
     }
 
     public User getUser() {

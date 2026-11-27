@@ -206,7 +206,9 @@ public class NoteServiceImpl implements NoteService {
     }
 
     private NoteResponseDto mapToResponse(Note note) {
-        return new NoteResponseDto(note.getId(), note.getTitle(), note.getDescription(), note.isPinned(),
+        NoteResponseDto response = new NoteResponseDto(note.getId(), note.getTitle(), note.getDescription(), note.isPinned(),
                 note.isArchived(), note.isTrashed(), note.getCreatedAt(), note.getUpdatedAt());
+        response.setReminderTime(note.getReminderTime());
+        return response;
     }
 }
