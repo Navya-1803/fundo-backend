@@ -57,4 +57,14 @@ class NoteTest {
         note.setReminderTime(java.time.LocalDateTime.of(2030, 1, 1, 9, 0));
         assertEquals(2030, note.getReminderTime().getYear());
     }
+
+    @Test
+    void testReminderMessageAndSentFlag() {
+        Note note = new Note();
+        assertFalse(note.isReminderSent());
+        note.setReminderMessage("Call");
+        note.setReminderSent(true);
+        assertEquals("Call", note.getReminderMessage());
+        assertTrue(note.isReminderSent());
+    }
 }

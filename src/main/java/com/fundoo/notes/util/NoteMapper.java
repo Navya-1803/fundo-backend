@@ -25,6 +25,7 @@ public final class NoteMapper {
         NoteResponseDto response = new NoteResponseDto(note.getId(), note.getTitle(), note.getDescription(), note.isPinned(),
                 note.isArchived(), note.isTrashed(), note.getCreatedAt(), note.getUpdatedAt());
         response.setReminderTime(note.getReminderTime());
+        response.setReminderSent(note.isReminderSent());
         // labels sorted by name, in a mutable list so the cache can serialize it
         List<LabelResponseDto> labels = new ArrayList<>(note.getLabels().stream()
                 .sorted(Comparator.comparing(Label::getName, String.CASE_INSENSITIVE_ORDER))

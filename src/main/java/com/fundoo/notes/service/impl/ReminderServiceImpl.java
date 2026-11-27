@@ -3,10 +3,8 @@ package com.fundoo.notes.service.impl;
 import com.fundoo.notes.dto.request.ReminderRequestDto;
 import com.fundoo.notes.dto.response.NoteResponseDto;
 import com.fundoo.notes.entity.Note;
-import com.fundoo.notes.event.ReminderEvent;
 import com.fundoo.notes.exception.NoteNotFoundException;
 import com.fundoo.notes.repository.NoteRepository;
-import com.fundoo.notes.service.ReminderEventPublisher;
 import com.fundoo.notes.service.ReminderService;
 import com.fundoo.notes.service.TokenService;
 import com.fundoo.notes.util.NoteMapper;
@@ -20,9 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * Stores the reminder time on the note (so it is never lost) and then
- * publishes a reminder event to RabbitMQ for the notification. If the
- * broker is down the reminder is still saved and the problem is logged.
+ * Stores the reminder time and message on the note. The email itself is
+ * sent later by the ReminderScheduler when the reminder time is reached.
  *
  * @author Navya Raj
  */
@@ -36,13 +33,10 @@ public class ReminderServiceImpl implements ReminderService {
 
     private final NoteRepository noteRepository;
     private final TokenService tokenService;
-    private final ReminderEventPublisher reminderEventPublisher;
 
-    public ReminderServiceImpl(NoteRepository noteRepository, TokenService tokenService,
-                               ReminderEventPublisher reminderEventPublisher) {
+    public ReminderServiceImpl(NoteRepository noteRepository, TokenService tokenService) {
         this.noteRepository = noteRepository;
         this.tokenService = tokenService;
-        this.reminderEventPublisher = reminderEventPublisher;
     }
 
     @Override
@@ -54,9 +48,11 @@ public class ReminderServiceImpl implements ReminderService {
             throw new IllegalArgumentException("A reminder cannot be set on a note in trash");
         }
         note.setReminderTime(requestDto.getReminderTime());
+        note.setReminderMessage(requestDto.getMessage());
+        // a new time means a new email, even if an earlier reminder was already sent
+        note.setReminderSent(false);
         Note saved = noteRepository.save(note);
         log.info("Reminder set on note id: {} for {}", saved.getId(), saved.getReminderTime());
-        publishEvent(new ReminderEvent(saved.getId(), userId, saved.getTitle(), saved.getReminderTime(), requestDto.getMessage()));
         return NoteMapper.toResponse(saved);
     }
 
@@ -75,17 +71,10 @@ public class ReminderServiceImpl implements ReminderService {
     public NoteResponseDto removeReminder(Long noteId, String token) {
         Note note = findOwnedNote(noteId, tokenService.extractUserId(token));
         note.setReminderTime(null);
+        note.setReminderMessage(null);
+        note.setReminderSent(false);
         log.info("Reminder removed from note id: {}", noteId);
         return NoteMapper.toResponse(noteRepository.save(note));
-    }
-
-    // the notification is best effort, the stored reminder is what matters
-    private void publishEvent(ReminderEvent event) {
-        try {
-            reminderEventPublisher.publish(event);
-        } catch (IllegalStateException e) {
-            log.warn("Reminder saved but notification could not be queued: {}", e.getMessage());
-        }
     }
 
     private Note findOwnedNote(Long noteId, Long userId) {

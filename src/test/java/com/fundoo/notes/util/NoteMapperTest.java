@@ -18,6 +18,7 @@ class NoteMapperTest {
         note.setId(1L);
         note.setPinned(true);
         note.setReminderTime(LocalDateTime.of(2030, 1, 1, 9, 0));
+        note.setReminderSent(true);
         Label work = new Label("work", null);
         work.setId(2L);
         Label admin = new Label("Admin", null);
@@ -30,6 +31,7 @@ class NoteMapperTest {
         assertEquals("Report", response.getTitle());
         assertTrue(response.isPinned());
         assertEquals(LocalDateTime.of(2030, 1, 1, 9, 0), response.getReminderTime());
+        assertTrue(response.isReminderSent());
         assertEquals("Admin", response.getLabels().get(0).getName());
         assertEquals("work", response.getLabels().get(1).getName());
     }

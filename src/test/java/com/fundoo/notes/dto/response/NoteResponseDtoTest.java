@@ -52,4 +52,11 @@ class NoteResponseDtoTest {
         dto.setReminderTime(time);
         assertEquals(time, dto.getReminderTime());
     }
+
+    @Test
+    void testReminderSent() {
+        NoteResponseDto dto = new NoteResponseDto();
+        dto.setReminderSent(true);
+        assertTrue(dto.isReminderSent());
+    }
 }
