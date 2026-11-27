@@ -2,28 +2,26 @@ package com.fundoo.notes.controller;
 
 import com.fundoo.notes.dto.request.ReminderRequestDto;
 import com.fundoo.notes.dto.response.NoteResponseDto;
-import com.fundoo.notes.event.ReminderEvent;
-import com.fundoo.notes.service.NoteService;
-import com.fundoo.notes.service.ReminderEventPublisher;
-import com.fundoo.notes.service.TokenService;
+import com.fundoo.notes.service.ReminderService;
 
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 
 /**
- * Schedules reminders on notes. The reminder is published to RabbitMQ and
- * processed asynchronously, so the endpoint answers 202 Accepted.
+ * Reminders on notes. The reminder is stored with the note and a
+ * notification event is sent to RabbitMQ in the background.
  *
  * @author Navya Raj
  */
@@ -33,30 +31,28 @@ public class ReminderController {
 
     private static final Logger log = LoggerFactory.getLogger(ReminderController.class);
 
-    private final NoteService noteService;
-    private final TokenService tokenService;
-    private final ReminderEventPublisher reminderEventPublisher;
+    private final ReminderService reminderService;
 
-    public ReminderController(NoteService noteService, TokenService tokenService, ReminderEventPublisher reminderEventPublisher) {
-        this.noteService = noteService;
-        this.tokenService = tokenService;
-        this.reminderEventPublisher = reminderEventPublisher;
+    public ReminderController(ReminderService reminderService) {
+        this.reminderService = reminderService;
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createReminder(@Valid @RequestBody ReminderRequestDto requestDto,
-                                                              @RequestHeader("Authorization") String token) {
+    public ResponseEntity<NoteResponseDto> createReminder(@Valid @RequestBody ReminderRequestDto requestDto,
+                                                          @RequestHeader("Authorization") String token) {
         log.debug("POST /api/reminders for note id: {}", requestDto.getNoteId());
-        // fails with 404 if the note does not belong to the caller
-        NoteResponseDto note = noteService.getNoteById(requestDto.getNoteId(), token);
-        Long userId = tokenService.extractUserId(token);
-        reminderEventPublisher.publish(new ReminderEvent(note.getId(), userId, note.getTitle(),
-                requestDto.getReminderTime(), requestDto.getMessage()));
+        return ResponseEntity.ok(reminderService.setReminder(requestDto, token));
+    }
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("message", "Reminder scheduled successfully");
-        body.put("noteId", note.getId());
-        body.put("reminderTime", requestDto.getReminderTime());
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(body);
+    @GetMapping
+    public ResponseEntity<List<NoteResponseDto>> getReminders(@RequestHeader("Authorization") String token) {
+        log.debug("GET /api/reminders");
+        return ResponseEntity.ok(reminderService.getReminders(token));
+    }
+
+    @DeleteMapping("/{noteId}")
+    public ResponseEntity<NoteResponseDto> removeReminder(@PathVariable Long noteId, @RequestHeader("Authorization") String token) {
+        log.debug("DELETE /api/reminders/{}", noteId);
+        return ResponseEntity.ok(reminderService.removeReminder(noteId, token));
     }
 }
