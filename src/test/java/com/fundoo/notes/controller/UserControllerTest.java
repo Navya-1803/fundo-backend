@@ -1,6 +1,7 @@
 package com.fundoo.notes.controller;
 
 import com.fundoo.notes.dto.response.LoginResponseDto;
+import com.fundoo.notes.dto.response.PasswordResetResponseDto;
 import com.fundoo.notes.dto.response.UserResponseDto;
 import com.fundoo.notes.exception.DuplicateEmailException;
 import com.fundoo.notes.exception.InvalidCredentialsException;
@@ -80,5 +81,32 @@ class UserControllerTest {
                         .content("{\"email\": \"navya@example.com\", \"password\": \"wrong123\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Invalid email or password"));
+    }
+
+    @Test
+    void testForgotPassword_ReturnsOtp() throws Exception {
+        when(userService.forgotPassword(any())).thenReturn(new PasswordResetResponseDto("OTP sent, it is valid for 5 minutes", "123456"));
+        mockMvc.perform(post("/api/users/forgot-password").contentType(MediaType.APPLICATION_JSON).content("{\"email\": \"navya@example.com\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.otp").value("123456"));
+    }
+
+    @Test
+    void testResetPassword() throws Exception {
+        when(userService.resetPassword(any())).thenReturn(new PasswordResetResponseDto("Password changed successfully, please sign in", null));
+        mockMvc.perform(post("/api/users/reset-password").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\": \"navya@example.com\", \"otp\": \"123456\", \"newPassword\": \"newpass123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password changed successfully, please sign in"))
+                .andExpect(jsonPath("$.otp").doesNotExist());
+    }
+
+    @Test
+    void testResetPassword_InvalidBody_Returns400() throws Exception {
+        mockMvc.perform(post("/api/users/reset-password").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\": \"navya@example.com\", \"otp\": \"12\", \"newPassword\": \"weak\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.validationErrors.otp").value("OTP must be 6 digits"));
+        verifyNoInteractions(userService);
     }
 }

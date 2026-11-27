@@ -1,14 +1,18 @@
 package com.fundoo.notes.service.impl;
 
+import com.fundoo.notes.dto.request.ForgotPasswordRequestDto;
 import com.fundoo.notes.dto.request.LoginRequestDto;
+import com.fundoo.notes.dto.request.ResetPasswordRequestDto;
 import com.fundoo.notes.dto.request.UserRegisterRequestDto;
 import com.fundoo.notes.dto.response.LoginResponseDto;
+import com.fundoo.notes.dto.response.PasswordResetResponseDto;
 import com.fundoo.notes.dto.response.UserResponseDto;
 import com.fundoo.notes.entity.User;
 import com.fundoo.notes.event.UserRegistrationEvent;
 import com.fundoo.notes.exception.DuplicateEmailException;
 import com.fundoo.notes.exception.InvalidCredentialsException;
 import com.fundoo.notes.repository.UserRepository;
+import com.fundoo.notes.service.OtpService;
 import com.fundoo.notes.service.PasswordService;
 import com.fundoo.notes.service.TokenService;
 import com.fundoo.notes.service.UserRegistrationEventPublisher;
@@ -32,13 +36,15 @@ public class UserServiceImpl implements UserService {
     private final PasswordService passwordService;
     private final TokenService tokenService;
     private final UserRegistrationEventPublisher eventPublisher;
+    private final OtpService otpService;
 
     public UserServiceImpl(UserRepository userRepository, PasswordService passwordService, TokenService tokenService,
-                           UserRegistrationEventPublisher eventPublisher) {
+                           UserRegistrationEventPublisher eventPublisher, OtpService otpService) {
         this.userRepository = userRepository;
         this.passwordService = passwordService;
         this.tokenService = tokenService;
         this.eventPublisher = eventPublisher;
+        this.otpService = otpService;
     }
 
     @Override
@@ -75,6 +81,34 @@ public class UserServiceImpl implements UserService {
         String token = tokenService.generateToken(user);
         log.info("Login successful for user id: {}", user.getId());
         return new LoginResponseDto(token, "Login successful");
+    }
+
+    @Override
+    public PasswordResetResponseDto forgotPassword(ForgotPasswordRequestDto requestDto) {
+        String email = requestDto.getEmail().trim().toLowerCase();
+        log.info("Password reset requested for {}", email);
+        if (!userRepository.existsByEmail(email)) {
+            log.warn("Password reset requested for unknown email: {}", email);
+            throw new InvalidCredentialsException("No account found with this email");
+        }
+        // the OTP is stored in Redis and expires automatically
+        String otp = otpService.generateOtp(email);
+        return new PasswordResetResponseDto("OTP sent, it is valid for 5 minutes", otp);
+    }
+
+    @Override
+    public PasswordResetResponseDto resetPassword(ResetPasswordRequestDto requestDto) {
+        String email = requestDto.getEmail().trim().toLowerCase();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new InvalidCredentialsException("No account found with this email"));
+        if (!otpService.verifyOtp(email, requestDto.getOtp())) {
+            log.warn("Password reset failed, wrong or expired OTP for user id: {}", user.getId());
+            throw new IllegalArgumentException("Invalid or expired OTP");
+        }
+        user.setPassword(passwordService.encode(requestDto.getNewPassword()));
+        userRepository.save(user);
+        log.info("Password reset for user id: {}", user.getId());
+        return new PasswordResetResponseDto("Password changed successfully, please sign in", null);
     }
 
     // converts the entity into the response sent to the client
