@@ -3,6 +3,8 @@ package com.fundoo.notes.dto.response;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Note details returned to the client.
@@ -21,6 +23,7 @@ public class NoteResponseDto implements Serializable {
     private boolean archived;
     private boolean trashed;
     private LocalDateTime reminderTime;
+    private List<LabelResponseDto> labels = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -93,6 +96,14 @@ public class NoteResponseDto implements Serializable {
 
     public void setReminderTime(LocalDateTime reminderTime) {
         this.reminderTime = reminderTime;
+    }
+
+    public List<LabelResponseDto> getLabels() {
+        return labels;
+    }
+
+    public void setLabels(List<LabelResponseDto> labels) {
+        this.labels = labels;
     }
 
     public LocalDateTime getCreatedAt() {

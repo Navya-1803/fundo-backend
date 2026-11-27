@@ -45,4 +45,9 @@ class GlobalExceptionHandlerTest {
         assertEquals(404, response.getStatusCode().value());
         assertEquals("Note not found with id: 7", response.getBody().getMessage());
     }
+
+    @Test
+    void testLabelNotFound_Returns404() {
+        assertEquals(404, handler.handleLabelNotFound(new LabelNotFoundException(3L), request).getStatusCode().value());
+    }
 }

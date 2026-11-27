@@ -7,12 +7,16 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Note written by a user. A note can be pinned, archived or moved to trash,
@@ -48,6 +52,13 @@ public class Note {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    // labels attached to this note, stored in the note_labels join table
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "note_labels",
+            joinColumns = @JoinColumn(name = "note_id"),
+            inverseJoinColumns = @JoinColumn(name = "label_id"))
+    private Set<Label> labels = new HashSet<>();
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -137,6 +148,18 @@ public class Note {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public Set<Label> getLabels() {
+        return labels;
+    }
+
+    public void addLabel(Label label) {
+        labels.add(label);
+    }
+
+    public void removeLabel(Label label) {
+        labels.remove(label);
     }
 
     public LocalDateTime getCreatedAt() {
