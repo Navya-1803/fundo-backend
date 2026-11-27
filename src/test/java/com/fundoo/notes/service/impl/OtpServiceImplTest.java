@@ -42,4 +42,9 @@ class OtpServiceImplTest {
         when(redisService.get(anyString())).thenReturn(Optional.empty());
         assertFalse(otpService.verifyOtp("navya@example.com", "123456"));
     }
+
+    @Test
+    void testValidityMinutes() {
+        assertEquals(5, otpService.getValidityMinutes());
+    }
 }

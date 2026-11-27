@@ -12,6 +12,7 @@ import com.fundoo.notes.event.UserRegistrationEvent;
 import com.fundoo.notes.exception.DuplicateEmailException;
 import com.fundoo.notes.exception.InvalidCredentialsException;
 import com.fundoo.notes.repository.UserRepository;
+import com.fundoo.notes.service.EmailService;
 import com.fundoo.notes.service.OtpService;
 import com.fundoo.notes.service.PasswordService;
 import com.fundoo.notes.service.TokenService;
@@ -37,14 +38,16 @@ public class UserServiceImpl implements UserService {
     private final TokenService tokenService;
     private final UserRegistrationEventPublisher eventPublisher;
     private final OtpService otpService;
+    private final EmailService emailService;
 
     public UserServiceImpl(UserRepository userRepository, PasswordService passwordService, TokenService tokenService,
-                           UserRegistrationEventPublisher eventPublisher, OtpService otpService) {
+                           UserRegistrationEventPublisher eventPublisher, OtpService otpService, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordService = passwordService;
         this.tokenService = tokenService;
         this.eventPublisher = eventPublisher;
         this.otpService = otpService;
+        this.emailService = emailService;
     }
 
     @Override
@@ -87,13 +90,15 @@ public class UserServiceImpl implements UserService {
     public PasswordResetResponseDto forgotPassword(ForgotPasswordRequestDto requestDto) {
         String email = requestDto.getEmail().trim().toLowerCase();
         log.info("Password reset requested for {}", email);
-        if (!userRepository.existsByEmail(email)) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> {
             log.warn("Password reset requested for unknown email: {}", email);
-            throw new InvalidCredentialsException("No account found with this email");
-        }
-        // the OTP is stored in Redis and expires automatically
+            return new InvalidCredentialsException("No account found with this email");
+        });
+        // the OTP is stored in Redis, expires automatically and is sent to the user's email
         String otp = otpService.generateOtp(email);
-        return new PasswordResetResponseDto("OTP sent, it is valid for 5 minutes", otp);
+        long validMinutes = otpService.getValidityMinutes();
+        emailService.sendOtpEmail(email, user.getFirstName(), otp, validMinutes);
+        return new PasswordResetResponseDto("OTP sent to " + email + ", it is valid for " + validMinutes + " minutes");
     }
 
     @Override
@@ -108,7 +113,7 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordService.encode(requestDto.getNewPassword()));
         userRepository.save(user);
         log.info("Password reset for user id: {}", user.getId());
-        return new PasswordResetResponseDto("Password changed successfully, please sign in", null);
+        return new PasswordResetResponseDto("Password changed successfully, please sign in");
     }
 
     // converts the entity into the response sent to the client

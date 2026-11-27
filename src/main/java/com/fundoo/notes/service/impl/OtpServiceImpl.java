@@ -34,6 +34,11 @@ public class OtpServiceImpl implements OtpService {
     }
 
     @Override
+    public long getValidityMinutes() {
+        return otpTtl.toMinutes();
+    }
+
+    @Override
     public String generateOtp(String email) {
         String otp = String.format("%06d", random.nextInt(1_000_000));
         // a new OTP replaces any older one for the same email

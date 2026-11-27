@@ -84,16 +84,25 @@ class UserControllerTest {
     }
 
     @Test
-    void testForgotPassword_ReturnsOtp() throws Exception {
-        when(userService.forgotPassword(any())).thenReturn(new PasswordResetResponseDto("OTP sent, it is valid for 5 minutes", "123456"));
+    void testForgotPassword_DoesNotReturnOtp() throws Exception {
+        when(userService.forgotPassword(any())).thenReturn(new PasswordResetResponseDto("OTP sent to navya@example.com, it is valid for 5 minutes"));
         mockMvc.perform(post("/api/users/forgot-password").contentType(MediaType.APPLICATION_JSON).content("{\"email\": \"navya@example.com\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.otp").value("123456"));
+                .andExpect(jsonPath("$.message").value("OTP sent to navya@example.com, it is valid for 5 minutes"))
+                .andExpect(jsonPath("$.otp").doesNotExist());
+    }
+
+    @Test
+    void testForgotPassword_MailServerDown_Returns503() throws Exception {
+        when(userService.forgotPassword(any())).thenThrow(new com.fundoo.notes.exception.EmailDeliveryException("Could not send the OTP email, please try again later", null));
+        mockMvc.perform(post("/api/users/forgot-password").contentType(MediaType.APPLICATION_JSON).content("{\"email\": \"navya@example.com\"}"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.message").value("Could not send the OTP email, please try again later"));
     }
 
     @Test
     void testResetPassword() throws Exception {
-        when(userService.resetPassword(any())).thenReturn(new PasswordResetResponseDto("Password changed successfully, please sign in", null));
+        when(userService.resetPassword(any())).thenReturn(new PasswordResetResponseDto("Password changed successfully, please sign in"));
         mockMvc.perform(post("/api/users/reset-password").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\": \"navya@example.com\", \"otp\": \"123456\", \"newPassword\": \"newpass123\"}"))
                 .andExpect(status().isOk())
