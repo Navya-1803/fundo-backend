@@ -21,11 +21,12 @@ The React frontend lives in the separate repository
 | ActiveMQ (JMS) | Welcome email event after registration |
 | RabbitMQ (AMQP) | Reminder notification events |
 | Redis | OTPs for password reset and the notes cache |
+| Spring Mail (SMTP) | Emailing the password reset OTP |
 | Spring Batch + Apache POI | Trash cleanup job and Excel note import |
 | Spring AOP | Method logging and performance timing |
 | SLF4J / Logback | Logging |
 | JUnit 5, Mockito, MockMvc, H2 | Tests |
-| Docker Compose | Starting PostgreSQL, Redis, RabbitMQ and ActiveMQ |
+| Docker Compose | Starting PostgreSQL, Redis, RabbitMQ, ActiveMQ and Mailpit |
 
 ## Project Structure
 
@@ -73,6 +74,7 @@ Every feature was built on its own branch from `develop` and merged back in this
 | `feature/UC19-Label` | Labels and labelling notes |
 | `feature/UC20-ForgotResetPassword` | Forgot / reset password with OTP |
 | `feature/UC21-DockerSetup` | Docker Compose and cache fallback |
+| `feature/UC22-EmailOtp` | Email the password reset OTP |
 
 ## How to Run
 
@@ -110,13 +112,33 @@ docker compose up -d
 ```
 
 This starts PostgreSQL (5432, database `fundoo_notes`), Redis (6379),
-RabbitMQ (5672, web page http://localhost:15672 guest/guest) and ActiveMQ
-(61616, web console http://localhost:8161 admin/admin).
+RabbitMQ (5672, web page http://localhost:15672 guest/guest), ActiveMQ
+(61616, web console http://localhost:8161 admin/admin) and **Mailpit**, a test
+email inbox: every email the backend sends (like the password reset OTP) shows up on
+http://localhost:8025.
+
+### Sending real emails (optional)
+
+By default emails go to the Mailpit test inbox. To deliver the OTP to real mailboxes,
+set these environment variables before starting the backend (example for Gmail, which
+needs 2-Step Verification and an App Password from https://myaccount.google.com/apppasswords):
+
+```
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your.address@gmail.com
+MAIL_PASSWORD=your-16-character-app-password
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS=true
+MAIL_FROM=your.address@gmail.com
+```
+
+The email password is never stored in the repository.
 
 **Without Docker:** install PostgreSQL, create the database once with
 `CREATE DATABASE fundoo_notes;` and run Redis, RabbitMQ and ActiveMQ with their
 default settings. If Redis is not running the app still works (the cache is
-skipped), only forgot password needs Redis.
+skipped), only forgot password needs Redis and a mail server (Mailpit or SMTP).
 
 ### 4. Start the backend
 
@@ -159,7 +181,7 @@ Every endpoint except `/api/users/**` needs the header `Authorization: Bearer <t
 |---|---|---|
 | POST | `/api/users/register` | Register |
 | POST | `/api/users/login` | Log in, returns a JWT |
-| POST | `/api/users/forgot-password` | Get an OTP (returned because no mail server is set up) |
+| POST | `/api/users/forgot-password` | Email a 6 digit OTP to the user |
 | POST | `/api/users/reset-password` | Reset password with the OTP |
 | GET | `/api/notes` | Active notes, pinned first |
 | POST | `/api/notes` | Create a note |
