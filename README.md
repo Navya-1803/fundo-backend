@@ -19,9 +19,9 @@ The React frontend lives in the separate repository
 | Jakarta Validation | Request validation |
 | JJWT, BCrypt (Spring Security Crypto) | Login tokens and password hashing |
 | ActiveMQ (JMS) | Welcome email event after registration |
-| RabbitMQ (AMQP) | Reminder notification events |
+| RabbitMQ (AMQP) | Due reminders queued for emailing |
 | Redis | OTPs for password reset and the notes cache |
-| Spring Mail (SMTP) | Emailing the password reset OTP |
+| Spring Mail (SMTP) | Emailing the password reset OTP and note reminders |
 | Spring Batch + Apache POI | Trash cleanup job and Excel note import |
 | Spring AOP | Method logging and performance timing |
 | SLF4J / Logback | Logging |
@@ -75,6 +75,7 @@ Every feature was built on its own branch from `develop` and merged back in this
 | `feature/UC20-ForgotResetPassword` | Forgot / reset password with OTP |
 | `feature/UC21-DockerSetup` | Docker Compose and cache fallback |
 | `feature/UC22-EmailOtp` | Email the password reset OTP |
+| `feature/UC23-ReminderEmail` | Email reminders when their time is reached |
 
 ## How to Run
 
@@ -114,12 +115,22 @@ docker compose up -d
 This starts PostgreSQL (5432, database `fundoo_notes`), Redis (6379),
 RabbitMQ (5672, web page http://localhost:15672 guest/guest), ActiveMQ
 (61616, web console http://localhost:8161 admin/admin) and **Mailpit**, a test
-email inbox: every email the backend sends (like the password reset OTP) shows up on
+email inbox: every email the backend sends (the password reset OTP and note
+reminders) shows up on
 http://localhost:8025.
+
+### Reminder emails
+
+When a reminder is set on a note, a scheduler checks every minute
+(`app.reminder.check-interval-ms`) for reminders whose time has come. Each due
+reminder is put on RabbitMQ and the consumer emails it to the note's owner,
+with the note title, description and the optional reminder message. If RabbitMQ
+is down the email is sent directly. A reminder is emailed only once
+(`reminderSent` becomes `true`); setting a new time sends a new email.
 
 ### Sending real emails (optional)
 
-By default emails go to the Mailpit test inbox. To deliver the OTP to real mailboxes,
+By default emails go to the Mailpit test inbox. To deliver the OTP and reminders to real mailboxes,
 set these environment variables before starting the backend (example for Gmail, which
 needs 2-Step Verification and an App Password from https://myaccount.google.com/apppasswords):
 
