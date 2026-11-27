@@ -1,4 +1,4 @@
-# Starts every service the backend needs: PostgreSQL, Redis, RabbitMQ and ActiveMQ.
+# Starts every service the backend needs: PostgreSQL, Redis, RabbitMQ, ActiveMQ and a Mailpit test inbox.
 # Usage: set DB_PASSWORD (see .env.example), then run "docker compose up -d"
 services:
   postgres:
@@ -34,6 +34,14 @@ services:
       - "61616:61616"
       # web console on http://localhost:8161 (admin / admin)
       - "8161:8161"
+
+  # test inbox: every email sent by the backend shows up on http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: fundoo-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
 volumes:
   postgres-data:

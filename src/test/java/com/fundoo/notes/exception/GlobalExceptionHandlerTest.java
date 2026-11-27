@@ -50,4 +50,9 @@ class GlobalExceptionHandlerTest {
     void testLabelNotFound_Returns404() {
         assertEquals(404, handler.handleLabelNotFound(new LabelNotFoundException(3L), request).getStatusCode().value());
     }
+
+    @Test
+    void testEmailDelivery_Returns503() {
+        assertEquals(503, handler.handleEmailDelivery(new EmailDeliveryException("Could not send the OTP email", null), request).getStatusCode().value());
+    }
 }

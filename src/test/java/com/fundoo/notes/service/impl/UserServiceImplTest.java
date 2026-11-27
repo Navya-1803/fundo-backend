@@ -7,10 +7,12 @@ import com.fundoo.notes.dto.request.UserRegisterRequestDto;
 import com.fundoo.notes.dto.response.LoginResponseDto;
 import com.fundoo.notes.dto.response.UserResponseDto;
 import com.fundoo.notes.entity.User;
+import com.fundoo.notes.exception.EmailDeliveryException;
 import com.fundoo.notes.event.UserRegistrationEvent;
 import com.fundoo.notes.exception.DuplicateEmailException;
 import com.fundoo.notes.exception.InvalidCredentialsException;
 import com.fundoo.notes.repository.UserRepository;
+import com.fundoo.notes.service.EmailService;
 import com.fundoo.notes.service.OtpService;
 import com.fundoo.notes.service.PasswordService;
 import com.fundoo.notes.service.TokenService;
@@ -27,6 +29,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(OutputCaptureExtension.class)
@@ -37,6 +40,7 @@ class UserServiceImplTest {
     private TokenService tokenService;
     private UserRegistrationEventPublisher eventPublisher;
     private OtpService otpService;
+    private EmailService emailService;
     private UserServiceImpl userService;
 
     @BeforeEach
@@ -46,7 +50,8 @@ class UserServiceImplTest {
         tokenService = mock(TokenService.class);
         eventPublisher = mock(UserRegistrationEventPublisher.class);
         otpService = mock(OtpService.class);
-        userService = new UserServiceImpl(userRepository, passwordService, tokenService, eventPublisher, otpService);
+        emailService = mock(EmailService.class);
+        userService = new UserServiceImpl(userRepository, passwordService, tokenService, eventPublisher, otpService, emailService);
         when(passwordService.encode(any())).thenAnswer(invocation -> "hashed-" + invocation.getArgument(0));
         when(passwordService.matches(any(), any())).thenAnswer(invocation ->
                 ("hashed-" + invocation.getArgument(0)).equals(invocation.getArgument(1)));
@@ -151,16 +156,29 @@ class UserServiceImplTest {
     }
 
     @Test
-    void testForgotPassword_GeneratesOtp() {
-        when(userRepository.existsByEmail("navya@example.com")).thenReturn(true);
+    void testForgotPassword_EmailsOtpAndDoesNotReturnIt() {
+        when(userRepository.findByEmail("navya@example.com")).thenReturn(Optional.of(storedUser()));
         when(otpService.generateOtp("navya@example.com")).thenReturn("123456");
-        assertEquals("123456", userService.forgotPassword(new ForgotPasswordRequestDto("Navya@Example.com")).getOtp());
+        when(otpService.getValidityMinutes()).thenReturn(5L);
+        String message = userService.forgotPassword(new ForgotPasswordRequestDto("Navya@Example.com")).getMessage();
+        verify(emailService).sendOtpEmail("navya@example.com", "Navya", "123456", 5L);
+        assertEquals("OTP sent to navya@example.com, it is valid for 5 minutes", message);
+        assertFalse(message.contains("123456"));
+    }
+
+    @Test
+    void testForgotPassword_MailServerDown() {
+        when(userRepository.findByEmail("navya@example.com")).thenReturn(Optional.of(storedUser()));
+        when(otpService.generateOtp(any())).thenReturn("123456");
+        doThrow(new EmailDeliveryException("Could not send the OTP email, please try again later", null))
+                .when(emailService).sendOtpEmail(any(), any(), any(), anyLong());
+        assertThrows(EmailDeliveryException.class, () -> userService.forgotPassword(new ForgotPasswordRequestDto("navya@example.com")));
     }
 
     @Test
     void testForgotPassword_UnknownEmail() {
         assertThrows(InvalidCredentialsException.class, () -> userService.forgotPassword(new ForgotPasswordRequestDto("x@example.com")));
-        verifyNoInteractions(otpService);
+        verifyNoInteractions(otpService, emailService);
     }
 
     @Test

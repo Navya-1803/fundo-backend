@@ -49,6 +49,7 @@ public class UserController {
         return ResponseEntity.ok(userService.login(requestDto));
     }
 
+    // sends a one time password to the user's email address
     @PostMapping("/forgot-password")
     public ResponseEntity<PasswordResetResponseDto> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDto requestDto) {
         log.debug("POST /api/users/forgot-password");

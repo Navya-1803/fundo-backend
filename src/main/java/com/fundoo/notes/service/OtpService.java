@@ -10,4 +10,7 @@ public interface OtpService {
     String generateOtp(String email);
 
     boolean verifyOtp(String email, String otp);
+
+    // how long a generated OTP stays valid
+    long getValidityMinutes();
 }
