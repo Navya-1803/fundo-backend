@@ -205,5 +205,4 @@ public class NoteServiceImpl implements NoteService {
             return new NoteNotFoundException(noteId);
         });
     }
-
 }

@@ -1,6 +1,8 @@
 package com.fundoo.notes.service.impl;
 
+import com.fundoo.notes.dto.request.ForgotPasswordRequestDto;
 import com.fundoo.notes.dto.request.LoginRequestDto;
+import com.fundoo.notes.dto.request.ResetPasswordRequestDto;
 import com.fundoo.notes.dto.request.UserRegisterRequestDto;
 import com.fundoo.notes.dto.response.LoginResponseDto;
 import com.fundoo.notes.dto.response.UserResponseDto;
@@ -9,6 +11,7 @@ import com.fundoo.notes.event.UserRegistrationEvent;
 import com.fundoo.notes.exception.DuplicateEmailException;
 import com.fundoo.notes.exception.InvalidCredentialsException;
 import com.fundoo.notes.repository.UserRepository;
+import com.fundoo.notes.service.OtpService;
 import com.fundoo.notes.service.PasswordService;
 import com.fundoo.notes.service.TokenService;
 import com.fundoo.notes.service.UserRegistrationEventPublisher;
@@ -33,6 +36,7 @@ class UserServiceImplTest {
     private PasswordService passwordService;
     private TokenService tokenService;
     private UserRegistrationEventPublisher eventPublisher;
+    private OtpService otpService;
     private UserServiceImpl userService;
 
     @BeforeEach
@@ -41,7 +45,8 @@ class UserServiceImplTest {
         passwordService = mock(PasswordService.class);
         tokenService = mock(TokenService.class);
         eventPublisher = mock(UserRegistrationEventPublisher.class);
-        userService = new UserServiceImpl(userRepository, passwordService, tokenService, eventPublisher);
+        otpService = mock(OtpService.class);
+        userService = new UserServiceImpl(userRepository, passwordService, tokenService, eventPublisher, otpService);
         when(passwordService.encode(any())).thenAnswer(invocation -> "hashed-" + invocation.getArgument(0));
         when(passwordService.matches(any(), any())).thenAnswer(invocation ->
                 ("hashed-" + invocation.getArgument(0)).equals(invocation.getArgument(1)));
@@ -143,5 +148,37 @@ class UserServiceImplTest {
         verify(eventPublisher).publish(captor.capture());
         assertEquals(3L, captor.getValue().getUserId());
         assertEquals("navya@example.com", captor.getValue().getEmail());
+    }
+
+    @Test
+    void testForgotPassword_GeneratesOtp() {
+        when(userRepository.existsByEmail("navya@example.com")).thenReturn(true);
+        when(otpService.generateOtp("navya@example.com")).thenReturn("123456");
+        assertEquals("123456", userService.forgotPassword(new ForgotPasswordRequestDto("Navya@Example.com")).getOtp());
+    }
+
+    @Test
+    void testForgotPassword_UnknownEmail() {
+        assertThrows(InvalidCredentialsException.class, () -> userService.forgotPassword(new ForgotPasswordRequestDto("x@example.com")));
+        verifyNoInteractions(otpService);
+    }
+
+    @Test
+    void testResetPassword_Success() {
+        User user = storedUser();
+        when(userRepository.findByEmail("navya@example.com")).thenReturn(Optional.of(user));
+        when(otpService.verifyOtp("navya@example.com", "123456")).thenReturn(true);
+        userService.resetPassword(new ResetPasswordRequestDto("navya@example.com", "123456", "newpass123"));
+        assertEquals("hashed-newpass123", user.getPassword());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void testResetPassword_WrongOtp() {
+        when(userRepository.findByEmail("navya@example.com")).thenReturn(Optional.of(storedUser()));
+        when(otpService.verifyOtp("navya@example.com", "000000")).thenReturn(false);
+        assertThrows(IllegalArgumentException.class,
+                () -> userService.resetPassword(new ResetPasswordRequestDto("navya@example.com", "000000", "newpass123")));
+        verify(userRepository, never()).save(any());
     }
 }
