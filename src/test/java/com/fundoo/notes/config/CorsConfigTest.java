@@ -1,6 +1,7 @@
 package com.fundoo.notes.config;
 
 import com.fundoo.notes.controller.NoteController;
+import com.fundoo.notes.service.LabelService;
 import com.fundoo.notes.service.NoteService;
 
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,9 @@ class CorsConfigTest {
 
     @MockitoBean
     private NoteService noteService;
+
+    @MockitoBean
+    private LabelService labelService;
 
     @Test
     void testPreflight_FromFrontend_IsAllowed() throws Exception {

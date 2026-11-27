@@ -2,6 +2,7 @@ package com.fundoo.notes.controller;
 
 import com.fundoo.notes.dto.request.NoteRequestDto;
 import com.fundoo.notes.dto.response.NoteResponseDto;
+import com.fundoo.notes.service.LabelService;
 import com.fundoo.notes.service.NoteService;
 
 import jakarta.validation.Valid;
@@ -36,9 +37,11 @@ public class NoteController {
     private static final Logger log = LoggerFactory.getLogger(NoteController.class);
 
     private final NoteService noteService;
+    private final LabelService labelService;
 
-    public NoteController(NoteService noteService) {
+    public NoteController(NoteService noteService, LabelService labelService) {
         this.noteService = noteService;
+        this.labelService = labelService;
     }
 
     @PostMapping
@@ -85,6 +88,20 @@ public class NoteController {
         log.debug("DELETE /api/notes/{}", noteId);
         noteService.deleteNote(noteId, token);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{noteId}/labels/{labelId}")
+    public ResponseEntity<NoteResponseDto> addLabel(@PathVariable Long noteId, @PathVariable Long labelId,
+                                                    @RequestHeader("Authorization") String token) {
+        log.debug("POST /api/notes/{}/labels/{}", noteId, labelId);
+        return ResponseEntity.ok(labelService.addLabelToNote(noteId, labelId, token));
+    }
+
+    @DeleteMapping("/{noteId}/labels/{labelId}")
+    public ResponseEntity<NoteResponseDto> removeLabel(@PathVariable Long noteId, @PathVariable Long labelId,
+                                                       @RequestHeader("Authorization") String token) {
+        log.debug("DELETE /api/notes/{}/labels/{}", noteId, labelId);
+        return ResponseEntity.ok(labelService.removeLabelFromNote(noteId, labelId, token));
     }
 
     // pin, archive and trash toggle the current state of the note
