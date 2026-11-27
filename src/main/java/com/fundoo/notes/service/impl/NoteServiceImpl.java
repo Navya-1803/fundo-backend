@@ -10,6 +10,7 @@ import com.fundoo.notes.repository.NoteRepository;
 import com.fundoo.notes.repository.UserRepository;
 import com.fundoo.notes.service.NoteService;
 import com.fundoo.notes.service.TokenService;
+import com.fundoo.notes.util.NoteMapper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +59,7 @@ public class NoteServiceImpl implements NoteService {
         log.debug("Note title: {}", requestDto.getTitle());
         Note savedNote = noteRepository.save(new Note(requestDto.getTitle().trim(), requestDto.getDescription(), user));
         log.info("Note created with id: {}", savedNote.getId());
-        return mapToResponse(savedNote);
+        return NoteMapper.toResponse(savedNote);
     }
 
     @Override
@@ -71,7 +72,7 @@ public class NoteServiceImpl implements NoteService {
         return noteRepository.findByUserIdAndArchivedFalseAndTrashedFalse(userId).stream()
                 .sorted(Comparator.comparing(Note::isPinned).reversed()
                         .thenComparing(Note::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .map(this::mapToResponse)
+                .map(NoteMapper::toResponse)
                 // a mutable list so the cache can serialize it
                 .collect(Collectors.toCollection(ArrayList::new));
     }
@@ -80,7 +81,7 @@ public class NoteServiceImpl implements NoteService {
     @Transactional(readOnly = true)
     public NoteResponseDto getNoteById(Long noteId, String token) {
         log.info("Fetching note id: {}", noteId);
-        return mapToResponse(findOwnedNote(noteId, token));
+        return NoteMapper.toResponse(findOwnedNote(noteId, token));
     }
 
     @Override
@@ -94,7 +95,7 @@ public class NoteServiceImpl implements NoteService {
         note.setTitle(requestDto.getTitle().trim());
         note.setDescription(requestDto.getDescription());
         log.info("Note id: {} updated", noteId);
-        return mapToResponse(noteRepository.save(note));
+        return NoteMapper.toResponse(noteRepository.save(note));
     }
 
     @Override
@@ -117,7 +118,7 @@ public class NoteServiceImpl implements NoteService {
         log.info("Fetching archived notes for user id: {}", userId);
         return noteRepository.findByUserIdAndArchivedTrueAndTrashedFalse(userId).stream()
                 .sorted(Comparator.comparing(Note::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .map(this::mapToResponse)
+                .map(NoteMapper::toResponse)
                 .toList();
     }
 
@@ -128,7 +129,7 @@ public class NoteServiceImpl implements NoteService {
         log.info("Fetching trashed notes for user id: {}", userId);
         return noteRepository.findByUserIdAndTrashedTrue(userId).stream()
                 .sorted(Comparator.comparing(Note::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .map(this::mapToResponse)
+                .map(NoteMapper::toResponse)
                 .toList();
     }
 
@@ -143,7 +144,7 @@ public class NoteServiceImpl implements NoteService {
                 .filter(note -> !note.isTrashed())
                 .filter(note -> note.getTitle().toLowerCase().contains(text)
                         || (note.getDescription() != null && note.getDescription().toLowerCase().contains(text)))
-                .map(this::mapToResponse)
+                .map(NoteMapper::toResponse)
                 .toList();
     }
 
@@ -157,7 +158,7 @@ public class NoteServiceImpl implements NoteService {
         }
         note.setPinned(!note.isPinned());
         log.info("Note id: {} pinned: {}", noteId, note.isPinned());
-        return mapToResponse(noteRepository.save(note));
+        return NoteMapper.toResponse(noteRepository.save(note));
     }
 
     @Override
@@ -174,7 +175,7 @@ public class NoteServiceImpl implements NoteService {
         if (note.isArchived()) {
             note.setPinned(false);
         }
-        return mapToResponse(noteRepository.save(note));
+        return NoteMapper.toResponse(noteRepository.save(note));
     }
 
     @Override
@@ -186,7 +187,7 @@ public class NoteServiceImpl implements NoteService {
         if (note.isTrashed()) {
             note.setPinned(false);
         }
-        return mapToResponse(noteRepository.save(note));
+        return NoteMapper.toResponse(noteRepository.save(note));
     }
 
     // resolves the logged in user from the JWT
@@ -205,10 +206,4 @@ public class NoteServiceImpl implements NoteService {
         });
     }
 
-    private NoteResponseDto mapToResponse(Note note) {
-        NoteResponseDto response = new NoteResponseDto(note.getId(), note.getTitle(), note.getDescription(), note.isPinned(),
-                note.isArchived(), note.isTrashed(), note.getCreatedAt(), note.getUpdatedAt());
-        response.setReminderTime(note.getReminderTime());
-        return response;
-    }
 }

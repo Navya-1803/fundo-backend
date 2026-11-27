@@ -31,6 +31,11 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
 
     Optional<Note> findByIdAndUserId(Long id, Long userId);
 
+    // notes of a user that carry the given label
+    List<Note> findByUserIdAndLabelsIdAndTrashedFalse(Long userId, Long labelId);
+
+    List<Note> findByLabelsId(Long labelId);
+
     // notes with a reminder, ordered by the reminder time
     List<Note> findByUserIdAndReminderTimeIsNotNullAndTrashedFalseOrderByReminderTimeAsc(Long userId);
 

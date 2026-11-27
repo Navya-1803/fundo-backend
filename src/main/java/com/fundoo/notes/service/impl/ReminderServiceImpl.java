@@ -9,6 +9,7 @@ import com.fundoo.notes.repository.NoteRepository;
 import com.fundoo.notes.service.ReminderEventPublisher;
 import com.fundoo.notes.service.ReminderService;
 import com.fundoo.notes.service.TokenService;
+import com.fundoo.notes.util.NoteMapper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,7 @@ public class ReminderServiceImpl implements ReminderService {
         Note saved = noteRepository.save(note);
         log.info("Reminder set on note id: {} for {}", saved.getId(), saved.getReminderTime());
         publishEvent(new ReminderEvent(saved.getId(), userId, saved.getTitle(), saved.getReminderTime(), requestDto.getMessage()));
-        return mapToResponse(saved);
+        return NoteMapper.toResponse(saved);
     }
 
     @Override
@@ -65,7 +66,7 @@ public class ReminderServiceImpl implements ReminderService {
         Long userId = tokenService.extractUserId(token);
         log.info("Fetching reminders for user id: {}", userId);
         return noteRepository.findByUserIdAndReminderTimeIsNotNullAndTrashedFalseOrderByReminderTimeAsc(userId).stream()
-                .map(this::mapToResponse)
+                .map(NoteMapper::toResponse)
                 .toList();
     }
 
@@ -75,7 +76,7 @@ public class ReminderServiceImpl implements ReminderService {
         Note note = findOwnedNote(noteId, tokenService.extractUserId(token));
         note.setReminderTime(null);
         log.info("Reminder removed from note id: {}", noteId);
-        return mapToResponse(noteRepository.save(note));
+        return NoteMapper.toResponse(noteRepository.save(note));
     }
 
     // the notification is best effort, the stored reminder is what matters
@@ -91,10 +92,4 @@ public class ReminderServiceImpl implements ReminderService {
         return noteRepository.findByIdAndUserId(noteId, userId).orElseThrow(() -> new NoteNotFoundException(noteId));
     }
 
-    private NoteResponseDto mapToResponse(Note note) {
-        NoteResponseDto response = new NoteResponseDto(note.getId(), note.getTitle(), note.getDescription(), note.isPinned(),
-                note.isArchived(), note.isTrashed(), note.getCreatedAt(), note.getUpdatedAt());
-        response.setReminderTime(note.getReminderTime());
-        return response;
-    }
 }
